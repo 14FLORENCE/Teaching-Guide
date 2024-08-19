@@ -44,8 +44,11 @@ def upload_content():
     pdf_path = os.path.join('uploads', file.filename)
     file.save(pdf_path)
 
+    # Process and store content from the PDF
+    process_pdf_content(pdf_path)
+
     # Generate content based on the selected type, custom prompt, or specific prompt result
-    content = generate_content(pdf_path, content_type, custom_prompt, custom_prompt_result)
+    content = generate_content(content_type, custom_prompt, custom_prompt_result)
 
     # Generate a PDF with the content
     pdf_filename = create_pdf(content)
@@ -53,31 +56,22 @@ def upload_content():
     return send_file(pdf_filename, as_attachment=True)
 
 @app.route('/chatbot', methods=['POST'])
-def chat_with_bot():
-    user_message = request.json.get('message')
+def chatbot_query():
+    data = request.get_json()
+    user_message = data.get('message')
 
     if not user_message:
         return jsonify({'response': 'Please enter a message.'}), 400
 
     try:
-        # Initialize the language model
-        llm = ChatOpenAI(api_key=OPENAI_API_KEY)
-        response = llm({"input": user_message})
-
-        # Check if response contains the 'answer' key
-        if "answer" in response:
-            bot_response = response["answer"]
-        else:
-            bot_response = response.get("text", "No response text found.")
+        # Generate a response using the language model
+        response = generate_chatbot_response(user_message)
+        return jsonify({'response': response})
 
     except Exception as e:
-        # Handle any errors that occur during the LLM invocation
-        bot_response = f"An error occurred: {str(e)}"
+        return jsonify({'response': f"An error occurred: {str(e)}"})
 
-    # Return the response as JSON
-    return jsonify({'response': bot_response})
-
-def generate_content(pdf_path, content_type, custom_prompt, custom_prompt_result):
+def process_pdf_content(pdf_path):
     loader = PyPDFLoader(file_path=pdf_path)
     documents = loader.load()
 
@@ -87,20 +81,18 @@ def generate_content(pdf_path, content_type, custom_prompt, custom_prompt_result
     docs = text_splitter.split_documents(documents)
 
     embeddings = OpenAIEmbeddings()
-
     vectorstore = FAISS.from_documents(docs, embeddings)
     vectorstore.save_local("vector_db")
 
+def generate_content(content_type, custom_prompt, custom_prompt_result):
     retrieval_qa_chat_prompt = hub.pull("langchain-ai/retrieval-qa-chat")
-
-    llm = ChatOpenAI(api_key=OPENAI_API_KEY)
+    llm = ChatOpenAI()
 
     combine_docs_chain = create_stuff_documents_chain(llm, retrieval_qa_chat_prompt)
 
-    retriever = FAISS.load_local("vector_db", embeddings).as_retriever()
+    retriever = FAISS.load_local("vector_db", OpenAIEmbeddings()).as_retriever()
     retrieval_chain = create_retrieval_chain(retriever, combine_docs_chain)
 
-    # Use the specific prompt for results if provided
     if custom_prompt_result:
         input_text = custom_prompt_result
     elif custom_prompt:
@@ -115,19 +107,23 @@ def generate_content(pdf_path, content_type, custom_prompt, custom_prompt_result
         input_text = input_texts.get(content_type, "Based on the content, generate a summary.")
 
     response = retrieval_chain.invoke({"input": input_text})
+    return response["answer"]
 
+def generate_chatbot_response(user_message):
+    llm = ChatOpenAI()
+    retriever = FAISS.load_local("vector_db", OpenAIEmbeddings()).as_retriever()
+    retrieval_chain = create_retrieval_chain(retriever, create_stuff_documents_chain(llm, hub.pull("langchain-ai/retrieval-qa-chat")))
+
+    response = retrieval_chain.invoke({"input": user_message})
     return response["answer"]
 
 def create_pdf(content):
     pdf = FPDF()
     pdf.add_page()
-
     pdf.set_font("Arial", size=12)
     pdf.multi_cell(0, 10, content)
-
     pdf_filename = "generated_content.pdf"
     pdf.output(pdf_filename)
-
     return pdf_filename
 
 if __name__ == "__main__":

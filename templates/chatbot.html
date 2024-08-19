@@ -18,22 +18,53 @@
             padding: 20px;
             background-color: #222;
             border-radius: 8px;
+            position: relative;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
         }
         h1 {
             text-align: center;
         }
         .chatbox {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 10px;
         }
         .messages {
-            max-height: 400px;
+            flex: 1;
             overflow-y: auto;
             background-color: #333;
             padding: 10px;
             border-radius: 4px;
             margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .message {
+            display: flex;
+            align-items: flex-start;
+        }
+        .message.bot {
+            justify-content: flex-start;
+        }
+        .message.user {
+            justify-content: flex-end;
+        }
+        .message div {
+            max-width: 70%;
+            padding: 10px;
+            border-radius: 4px;
+            word-wrap: break-word;
+        }
+        .message.bot div {
+            background-color: #444;
+            color: white;
+        }
+        .message.user div {
+            background-color: #666;
+            color: white;
         }
         .input-group {
             display: flex;
@@ -68,10 +99,26 @@
             width: 100%;
             color: white;
         }
+        .leave-chat {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background-color: #444;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .leave-chat:hover {
+            background-color: #555;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <button class="leave-chat" onclick="window.location.href='/'">Leave Chat</button>
         <h1>Chat with the Bot</h1>
         <div class="chatbox">
             <div class="messages" id="messages"></div>
@@ -91,6 +138,14 @@
                 return;
             }
 
+            // Display user message
+            const messages = document.getElementById('messages');
+            const userMessageElement = document.createElement('div');
+            userMessageElement.className = 'message user';
+            userMessageElement.innerHTML = '<div>' + userMessage + '</div>';
+            messages.appendChild(userMessageElement);
+
+            // Send message to the chatbot
             fetch('/chatbot', {
                 method: 'POST',
                 headers: {
@@ -100,10 +155,10 @@
             })
             .then(response => response.json())
             .then(data => {
-                const messages = document.getElementById('messages');
-                const botMessage = document.createElement('div');
-                botMessage.textContent = 'Bot: ' + data.response;
-                messages.appendChild(botMessage);
+                const botMessageElement = document.createElement('div');
+                botMessageElement.className = 'message bot';
+                botMessageElement.innerHTML = '<div>' + data.response + '</div>';
+                messages.appendChild(botMessageElement);
 
                 document.getElementById('user_message').value = '';
                 messages.scrollTop = messages.scrollHeight;
