@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #222;
+            border-radius: 8px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .chatbox {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .messages {
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: #333;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background-color: #333;
+            color: white;
+        }
+        button {
+            padding: 10px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background-color: #444;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #555;
+        }
+        .footer {
+            text-align: center;
+            padding: 10px;
+            background-color: #222;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chat with the Bot</h1>
+        <div class="chatbox">
+            <div class="messages" id="messages"></div>
+            <div class="input-group">
+                <input type="text" id="user_message" placeholder="Type your message here...">
+                <button id="send_message">Send</button>
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        Florence Sway
+    </div>
+    <script>
+        document.getElementById('send_message').addEventListener('click', function() {
+            const userMessage = document.getElementById('user_message').value;
+            if (userMessage.trim() === '') {
+                return;
+            }
+
+            fetch('/chatbot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: userMessage })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const messages = document.getElementById('messages');
+                const botMessage = document.createElement('div');
+                botMessage.textContent = 'Bot: ' + data.response;
+                messages.appendChild(botMessage);
+
+                document.getElementById('user_message').value = '';
+                messages.scrollTop = messages.scrollHeight;
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, send_file
+from flask import Flask, request, render_template, send_file, jsonify
 from dotenv import load_dotenv
 from langchain import hub
 from langchain.chains import create_retrieval_chain
@@ -23,6 +23,10 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 def index():
     return render_template('index.html')
 
+@app.route('/chatbot')
+def chatbot():
+    return render_template('chatbot.html')
+
 @app.route('/upload', methods=['POST'])
 def upload_content():
     if 'file' not in request.files or 'content_type' not in request.form:
@@ -30,6 +34,8 @@ def upload_content():
 
     file = request.files['file']
     content_type = request.form['content_type']
+    custom_prompt = request.form.get('custom_prompt')
+    custom_prompt_result = request.form.get('custom_prompt_result')
 
     if file.filename == '':
         return 'No selected file!', 400
@@ -37,17 +43,41 @@ def upload_content():
     # Save the uploaded PDF file
     pdf_path = os.path.join('uploads', file.filename)
     file.save(pdf_path)
-    print(pdf_path)
 
-    # Generate content based on the selected type
-    content = generate_content(pdf_path, content_type)
+    # Generate content based on the selected type, custom prompt, or specific prompt result
+    content = generate_content(pdf_path, content_type, custom_prompt, custom_prompt_result)
 
     # Generate a PDF with the content
     pdf_filename = create_pdf(content)
 
     return send_file(pdf_filename, as_attachment=True)
 
-def generate_content(pdf_path, content_type):
+@app.route('/chatbot', methods=['POST'])
+def chat_with_bot():
+    user_message = request.json.get('message')
+
+    if not user_message:
+        return jsonify({'response': 'Please enter a message.'}), 400
+
+    try:
+        # Initialize the language model
+        llm = ChatOpenAI(api_key=OPENAI_API_KEY)
+        response = llm({"input": user_message})
+
+        # Check if response contains the 'answer' key
+        if "answer" in response:
+            bot_response = response["answer"]
+        else:
+            bot_response = response.get("text", "No response text found.")
+
+    except Exception as e:
+        # Handle any errors that occur during the LLM invocation
+        bot_response = f"An error occurred: {str(e)}"
+
+    # Return the response as JSON
+    return jsonify({'response': bot_response})
+
+def generate_content(pdf_path, content_type, custom_prompt, custom_prompt_result):
     loader = PyPDFLoader(file_path=pdf_path)
     documents = loader.load()
 
@@ -63,22 +93,26 @@ def generate_content(pdf_path, content_type):
 
     retrieval_qa_chat_prompt = hub.pull("langchain-ai/retrieval-qa-chat")
 
-    llm = ChatOpenAI()
+    llm = ChatOpenAI(api_key=OPENAI_API_KEY)
 
     combine_docs_chain = create_stuff_documents_chain(llm, retrieval_qa_chat_prompt)
 
     retriever = FAISS.load_local("vector_db", embeddings).as_retriever()
     retrieval_chain = create_retrieval_chain(retriever, combine_docs_chain)
 
-    # Define the input based on the selected content type
-    input_texts = {
-        'questions': "Based on the content, generate quiz questions with multiple choice answers.",
-        'answers': "Based on the content, generate detailed answers to key questions.",
-        'lesson_plan': "Based on the content, generate a lesson plan and weekly timetable for a student to follow.",
-        'summary': "Based on the content, generate a summary of the document."
-    }
-
-    input_text = input_texts.get(content_type, "Based on the content, generate a summary.")
+    # Use the specific prompt for results if provided
+    if custom_prompt_result:
+        input_text = custom_prompt_result
+    elif custom_prompt:
+        input_text = custom_prompt
+    else:
+        input_texts = {
+            'questions': "Based on the content, generate quiz questions with multiple choice answers.",
+            'answers': "Based on the content, generate detailed answers to key questions.",
+            'lesson_plan': "Based on the content, generate a lesson plan and weekly timetable for a student to follow.",
+            'summary': "Based on the content, generate a summary of the document."
+        }
+        input_text = input_texts.get(content_type, "Based on the content, generate a summary.")
 
     response = retrieval_chain.invoke({"input": input_text})
 
