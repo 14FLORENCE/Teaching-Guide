@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot</title>
+    <title>SwayBot</title>
     <style>
         body {
             background-color: black;
@@ -25,6 +25,7 @@
         }
         h1 {
             text-align: center;
+            font-size: 24px;
         }
         .chatbox {
             flex: 1;
@@ -41,6 +42,15 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: #666 #333;
+        }
+        .messages::-webkit-scrollbar {
+            width: 8px;
+        }
+        .messages::-webkit-scrollbar-thumb {
+            background-color: #666;
+            border-radius: 4px;
         }
         .message {
             display: flex;
@@ -57,10 +67,18 @@
             padding: 10px;
             border-radius: 4px;
             word-wrap: break-word;
+            display: flex;
+            align-items: center;
         }
         .message.bot div {
             background-color: #444;
             color: white;
+            position: relative;
+        }
+        .message.bot div::before {
+            content: url('img/SwayBot.png'); /* Access logo from img folder */
+            display: inline-block;
+            margin-right: 10px;
         }
         .message.user div {
             background-color: #666;
@@ -119,7 +137,7 @@
 <body>
     <div class="container">
         <button class="leave-chat" onclick="window.location.href='/'">Leave Chat</button>
-        <h1>Chat with the Bot</h1>
+        <h1>SwayBot</h1>
         <div class="chatbox">
             <div class="messages" id="messages"></div>
             <div class="input-group">
@@ -145,24 +163,26 @@
             userMessageElement.innerHTML = '<div>' + userMessage + '</div>';
             messages.appendChild(userMessageElement);
 
-            // Send message to the chatbot
-            fetch('/chatbot', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ message: userMessage })
-            })
-            .then(response => response.json())
-            .then(data => {
-                const botMessageElement = document.createElement('div');
-                botMessageElement.className = 'message bot';
-                botMessageElement.innerHTML = '<div>' + data.response + '</div>';
-                messages.appendChild(botMessageElement);
+            // Simulate quick SwayBot response with a short delay
+            setTimeout(() => {
+                fetch('/chatbot', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: userMessage })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const botMessageElement = document.createElement('div');
+                    botMessageElement.className = 'message bot';
+                    botMessageElement.innerHTML = '<div>' + data.response + '</div>';
+                    messages.appendChild(botMessageElement);
 
-                document.getElementById('user_message').value = '';
-                messages.scrollTop = messages.scrollHeight;
-            });
+                    document.getElementById('user_message').value = '';
+                    messages.scrollTop = messages.scrollHeight;
+                });
+            }, 300); // Quick response delay (300ms)
         });
     </script>
 </body>
