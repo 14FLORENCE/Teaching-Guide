@@ -98,13 +98,16 @@ def generate_content(content_type, custom_prompt, custom_prompt_result):
     elif custom_prompt:
         input_text = custom_prompt
     else:
-        input_texts = {
-            'questions': "Based on the content, generate quiz questions with multiple choice answers.",
-            'answers': "Based on the content, generate detailed answers to key questions.",
-            'lesson_plan': "Based on the content, generate a lesson plan and weekly timetable for a student to follow.",
-            'summary': "Based on the content, generate a summary of the document."
-        }
-        input_text = input_texts.get(content_type, "Based on the content, generate a summary.")
+       input_texts = {
+    'questions': (
+        "Based on the content, generate 10 multiple choice questions with 4 answer options each, "
+        "10 true or false questions, 5 definition questions, and 5 short notes questions."
+    ),
+    'answers': "Based on the content, generate detailed answers to key questions.",
+    'lesson_plan': "Based on the content, generate a lesson plan and weekly timetable for a student to follow.",
+    'summary': "Based on the content, generate a summary of the document."
+      }
+       input_text = input_texts.get(content_type, "Based on the content, generate a summary.")
 
     response = retrieval_chain.invoke({"input": input_text})
     return response["answer"]
