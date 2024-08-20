@@ -11,7 +11,7 @@ from fpdf import FPDF
 import os
 from flask_cors import CORS
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='assets')
 CORS(app)
 
 load_dotenv()

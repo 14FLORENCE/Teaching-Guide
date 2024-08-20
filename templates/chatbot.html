@@ -11,91 +11,126 @@
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
+
         .container {
             max-width: 800px;
-            margin: 0 auto;
+            width: 100%;
             padding: 20px;
             background-color: #222;
             border-radius: 8px;
-            position: relative;
-            height: 80vh;
             display: flex;
             flex-direction: column;
+            height: 90vh;
         }
+
         h1 {
             text-align: center;
             font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
         }
+
+        h1 img {
+            width: 30px;
+            height: auto;
+        }
+
         .chatbox {
             flex: 1;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
+
         .messages {
             flex: 1;
             overflow-y: auto;
             background-color: #333;
             padding: 10px;
             border-radius: 4px;
-            margin-bottom: 10px;
             display: flex;
             flex-direction: column;
             gap: 10px;
             scrollbar-width: thin;
             scrollbar-color: #666 #333;
         }
+
         .messages::-webkit-scrollbar {
             width: 8px;
         }
+
         .messages::-webkit-scrollbar-thumb {
             background-color: #666;
             border-radius: 4px;
         }
+
         .message {
             display: flex;
             align-items: flex-start;
+            word-wrap: break-word;
         }
+
         .message.bot {
             justify-content: flex-start;
+            gap: 10px;
         }
+
         .message.user {
             justify-content: flex-end;
         }
+
         .message div {
             max-width: 70%;
             padding: 10px;
             border-radius: 4px;
-            word-wrap: break-word;
-            display: flex;
-            align-items: center;
-        }
-        .message.bot div {
             background-color: #444;
             color: white;
             position: relative;
         }
-        .message.bot div::before {
-            content: url('img/SwayBot.png'); /* Access logo from img folder */
-            display: inline-block;
-            margin-right: 10px;
-        }
+
         .message.user div {
             background-color: #666;
-            color: white;
         }
+
+        .message img {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+        }
+
         .input-group {
             display: flex;
             gap: 10px;
+            margin-top: 10px;
         }
-        input[type="text"] {
+
+        textarea {
             flex: 1;
             padding: 10px;
             border: 1px solid #555;
             border-radius: 4px;
             background-color: #333;
             color: white;
+            resize: none;
+            overflow: hidden;
+            height: 40px;
+            max-height: 200px;
+            line-height: 1.5;
         }
+
+        textarea:focus {
+            outline: none;
+            background-color: #444;
+        }
+
         button {
             padding: 10px;
             border: 1px solid #555;
@@ -105,43 +140,62 @@
             cursor: pointer;
             transition: background-color 0.3s;
         }
+
         button:hover {
             background-color: #555;
         }
+
         .footer {
             text-align: center;
             padding: 10px;
             background-color: #222;
-            position: absolute;
-            bottom: 0;
-            width: 100%;
             color: white;
         }
+
         .leave-chat {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .leave-chat:hover {
+            background-color: #0056b3;
+        }
+
+        .clear-chat {
             position: absolute;
             top: 20px;
             right: 20px;
             padding: 10px;
             border: 1px solid #555;
             border-radius: 4px;
-            background-color: #444;
+            background-color: #dc3545;
             color: white;
             cursor: pointer;
             transition: background-color 0.3s;
         }
-        .leave-chat:hover {
-            background-color: #555;
+
+        .clear-chat:hover {
+            background-color: #c82333;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <button class="leave-chat" onclick="window.location.href='/'">Leave Chat</button>
-        <h1>SwayBot</h1>
+        <button class="clear-chat" onclick="clearChat()">Clear Chat</button>
+        <h1><img src="assets/img/SwayBot.png" alt="SwayBotLogo"> SwayBot</h1>
         <div class="chatbox">
             <div class="messages" id="messages"></div>
             <div class="input-group">
-                <input type="text" id="user_message" placeholder="Type your message here...">
+                <textarea id="user_message" placeholder="Type your message here..."></textarea>
                 <button id="send_message">Send</button>
             </div>
         </div>
@@ -176,13 +230,33 @@
                 .then(data => {
                     const botMessageElement = document.createElement('div');
                     botMessageElement.className = 'message bot';
-                    botMessageElement.innerHTML = '<div>' + data.response + '</div>';
+                    botMessageElement.innerHTML = '<img src="assets/img/SwayBot.png" alt="SwayBotLogo"><div>' + data.response + '</div>';
                     messages.appendChild(botMessageElement);
 
                     document.getElementById('user_message').value = '';
+                    document.getElementById('user_message').style.height = '40px';
                     messages.scrollTop = messages.scrollHeight;
                 });
-            }, 300); // Quick response delay (300ms)
+            }, 300);
+        });
+
+        function clearChat() {
+            document.getElementById('messages').innerHTML = '';
+        }
+
+        // Auto-expand textarea
+        const textarea = document.getElementById('user_message');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        // Allow Enter key to create a new line in textarea
+        textarea.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                document.getElementById('send_message').click();
+            }
         });
     </script>
 </body>
