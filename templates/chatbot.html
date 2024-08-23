@@ -154,6 +154,7 @@
             padding: 10px;
             background-color: #222;
             color: white;
+            margin-top: auto; /* Ensures footer stays at the bottom */
         }
 
         .controls {
@@ -184,9 +185,9 @@
             <button class="leave-chat" onclick="window.location.href='/'">Leave Chat</button>
             <button class="clear-chat" onclick="clearChat()">Clear Chat</button>
         </div>
-    </div>
-    <div class="footer">
-        Florence Sway
+        <div class="footer">
+            Florence Sway
+        </div>
     </div>
     <script>
         document.getElementById('send_message').addEventListener('click', function() {
